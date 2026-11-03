@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.darshan.filemanager'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.darshan.filemanager"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Release signing: put your keystore details in keystore.properties (not committed)
+    def ksFile = rootProject.file("keystore.properties")
+    def ks = new Properties()
+    if (ksFile.exists()) { ks.load(new FileInputStream(ksFile)) }
+
+    signingConfigs {
+        release {
+            if (ksFile.exists()) {
+                storeFile rootProject.file(ks['storeFile'])
+                storePassword ks['storePassword']
+                keyAlias ks['keyAlias']
+                keyPassword ks['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ksFile.exists() ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            all {
+                systemProperty 'shots.dir', rootProject.file('screenshots').absolutePath
+                testLogging { events "passed", "failed"; exceptionFormat "full" }
+            }
+        }
+    }
+
+    lint {
+        abortOnError false
+        // all-files access is the whole point of this sideloaded app
+        disable 'ScopedStorage', 'LockedOrientationActivity', 'DiscouragedApi'
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.13'
+}
