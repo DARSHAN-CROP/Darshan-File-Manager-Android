@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/maroon_dark" android:orientation="horizontal"
+        android:gravity="center_vertical" android:paddingLeft="16dp" android:paddingRight="16dp"
+        android:paddingTop="14dp" android:paddingBottom="14dp">
+        <ImageView android:layout_width="44dp" android:layout_height="44dp"
+            android:src="@mipmap/ic_launcher" android:contentDescription="@string/app_name"/>
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="vertical" android:layout_marginLeft="12dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="@string/app_name" android:textColor="#FFFFFF" android:textSize="20sp"
+                android:textStyle="bold"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="by Darshan Corporation" android:textColor="@color/gold_light" android:textSize="13sp"/>
+        </LinearLayout>
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="3dp" android:background="@color/gold"/>
+
+    <ScrollView android:id="@+id/scroll" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingLeft="14dp" android:paddingRight="14dp"
+            android:paddingBottom="20dp">
+
+            <LinearLayout android:id="@+id/permCard" style="@style/Card" android:background="@drawable/perm_bg">
+                <TextView style="@style/CardTitle" android:text="⚠ Permission needed"/>
+                <TextView android:id="@+id/permText" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:textColor="@color/text" android:textSize="14sp"
+                    android:text="To move files in your Download folder, allow &quot;All files access&quot; for Darshan File Manager."/>
+                <Button android:id="@+id/btnPerm" style="@style/BigButton" android:background="@drawable/btn_gold"
+                    android:textColor="#3A0A14" android:text="Allow All files access"/>
+            </LinearLayout>
+
+            <LinearLayout style="@style/Card">
+                <TextView style="@style/CardTitle" android:text="📂 Folder"/>
+                <TextView android:id="@+id/folderPath" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:textColor="@color/text" android:textSize="14sp"
+                    android:fontFamily="monospace"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="10dp">
+                    <Button android:id="@+id/btnChoose" style="@style/SmallButton" android:text="Choose folder"/>
+                    <View android:layout_width="10dp" android:layout_height="1dp"/>
+                    <Button android:id="@+id/btnDownloads" style="@style/SmallButton" android:text="Downloads"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <Button android:id="@+id/btnDate" style="@style/BigButton" android:layout_marginTop="14dp"
+                android:text="📁  Date Folder"/>
+            <Button android:id="@+id/btnExt" style="@style/BigButton" android:text="🔤  Sort by Extension"/>
+            <Button android:id="@+id/btnType" style="@style/BigButton" android:text="🧹  Sort by Type"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="10dp">
+                <Button android:id="@+id/btnUndo" style="@style/SmallButton" android:text="↩  Undo last sort"/>
+            </LinearLayout>
+
+            <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:gravity="center" android:textColor="@color/maroon"
+                android:textSize="16sp" android:textStyle="bold" android:text="Ready"/>
+
+            <LinearLayout style="@style/Card">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView style="@style/CardTitle" android:layout_width="0dp" android:layout_weight="1"
+                        android:text="⏱ Auto mode"/>
+                    <Switch android:id="@+id/swAuto" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                </LinearLayout>
+                <RadioGroup android:id="@+id/rgMode" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:layout_marginTop="4dp">
+                    <RadioButton android:id="@+id/rbType" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Sort by Type" android:textColor="@color/text"/>
+                    <RadioButton android:id="@+id/rbExt" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginLeft="16dp" android:text="Sort by Extension" android:textColor="@color/text"/>
+                </RadioGroup>
+                <TextView android:id="@+id/autoNote" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:textColor="@color/text_soft" android:textSize="12.5sp"
+                    android:text="Runs every 15 minutes (the minimum Android allows), even when the app is closed and after the phone restarts."/>
+            </LinearLayout>
+
+            <LinearLayout style="@style/Card">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView style="@style/CardTitle" android:layout_width="0dp" android:layout_weight="1"
+                        android:text="📋 Activity log"/>
+                    <TextView android:id="@+id/btnClearLog" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:padding="6dp" android:text="Clear" android:textColor="@color/maroon" android:textSize="14sp"/>
+                </LinearLayout>
+                <TextView android:id="@+id/logText" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:textColor="@color/text" android:textSize="12sp"
+                    android:fontFamily="monospace" android:textIsSelectable="true" android:text="No activity yet"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
