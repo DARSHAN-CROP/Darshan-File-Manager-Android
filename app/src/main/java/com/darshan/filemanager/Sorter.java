@@ -27,6 +27,10 @@ public final class Sorter {
 
     public static final int MODE_EXTENSION = 1;
     public static final int MODE_TYPE = 2;
+    /** Year/Month folders by modified date, e.g. 2026/11-November. */
+    public static final int MODE_DATE = 3;
+    /** Only custom rules (used by Auto mode when type/extension sort is not ticked). */
+    public static final int MODE_RULES_ONLY = 0;
 
     public static final String NO_EXTENSION = "NO_EXTENSION";
     public static final String OTHERS = "Others";
@@ -64,6 +68,7 @@ public final class Sorter {
         public int moved;
         public int skipped;
         public int errors;
+        public int byRule;
         public final List<String> lines = new ArrayList<>();
         public String summary() {
             String s = moved + (moved == 1 ? " file moved" : " files moved");
@@ -165,21 +170,39 @@ public final class Sorter {
         return true;
     }
 
-    /**
-     * Sorts the files directly inside dir. The undo log (moves + folders created) is written to undoLog
-     * only when something moved, so the previous undo stays available after an empty run.
-     */
+    /** "2026/11-November" (year / month number-month name) from a file's modified time. */
+    public static String dateFolderFor(long modifiedMs) {
+        Date d = new Date(modifiedMs);
+        return new SimpleDateFormat("yyyy", Locale.US).format(d) + "/"
+                + new SimpleDateFormat("MM-MMMM", Locale.US).format(d);
+    }
+
     public static Result sort(File dir, int mode, File undoLog, long minAgeMs, long nowMs) {
+        return sort(dir, mode, null, undoLog, minAgeMs, nowMs);
+    }
+
+    /**
+     * Sorts the files directly inside dir. Custom rules are checked first, then the mode
+     * (Type, Extension, Date Year/Month, or RULES_ONLY = only files a rule matches move).
+     * The undo log is written only when something moved, so the previous undo stays available after an empty run.
+     */
+    public static Result sort(File dir, int mode, List<Rules.Rule> rules, File undoLog, long minAgeMs, long nowMs) {
         Result r = new Result();
+        List<String> log = new ArrayList<>();
+        sortInto(dir, mode, rules, minAgeMs, nowMs, r, log);
+        saveUndo(undoLog, log, r);
+        return r;
+    }
+
+    /** Same as sort() but appends the undo entries to log (so several steps can share one Undo). */
+    public static void sortInto(File dir, int mode, List<Rules.Rule> rules, long minAgeMs, long nowMs, Result r, List<String> log) {
         File[] files = dir.listFiles();
         if (files == null) {
             r.errors++;
             r.lines.add("Cannot read folder (permission?): " + dir.getAbsolutePath());
-            return r;
+            return;
         }
         Arrays.sort(files);
-        List<String> log = new ArrayList<>();
-        Map<String, Boolean> made = new LinkedHashMap<>();
         for (File f : files) {
             if (!f.isFile()) continue;                          // folders (incl. our own) stay
             String name = f.getName();
@@ -189,33 +212,63 @@ public final class Sorter {
                 r.lines.add("Skipped (still downloading?): " + name);
                 continue;
             }
-            String folder = mode == MODE_EXTENSION ? extFolderFor(name) : typeFolderFor(name);
-            File target = new File(dir, folder);
-            if (target.exists() && !target.isDirectory()) {
-                r.errors++;
-                r.lines.add("Error: a file named " + folder + " blocks the folder");
-                continue;
+            String folder = Rules.folderFor(name, rules);
+            boolean byRule = folder != null;
+            if (folder == null) {
+                if (mode == MODE_EXTENSION) folder = extFolderFor(name);
+                else if (mode == MODE_TYPE) folder = typeFolderFor(name);
+                else if (mode == MODE_DATE) folder = dateFolderFor(f.lastModified());
+                else continue;                                  // rules only: no rule, file stays
             }
-            if (!target.exists()) {
-                if (!target.mkdirs()) { r.errors++; r.lines.add("Error: cannot create " + folder); continue; }
-                made.put(target.getAbsolutePath(), true);
+            if (moveInto(dir, folder, f, r, log)) {
+                if (byRule) r.byRule++;
             }
-            File dst = uniqueDest(target, name);
-            if (dst == null || !moveFile(f, dst)) {
-                r.errors++;
-                r.lines.add("Error moving " + name);
-                continue;
-            }
-            r.moved++;
-            log.add("M\t" + dst.getAbsolutePath() + "\t" + f.getAbsolutePath());
-            r.lines.add(name + "  \u2192  " + folder + (dst.getName().equals(name) ? "" : "  (as " + dst.getName() + ")"));
         }
-        for (String d : made.keySet()) log.add("D\t" + d);
-        if (r.moved > 0 && undoLog != null) {
-            try { writeLines(undoLog, log); }
-            catch (IOException e) { r.lines.add("Warning: undo log not saved"); }
+    }
+
+    /** Creates dir/rel (one or more levels), logging each created level for Undo. Null on failure. */
+    static File ensureDir(File dir, String rel, Result r, List<String> log) {
+        File cur = dir;
+        for (String part : rel.split("/")) {
+            if (part.isEmpty()) continue;
+            cur = new File(cur, part);
+            if (cur.exists() && !cur.isDirectory()) {
+                r.errors++;
+                r.lines.add("Error: a file named " + part + " blocks the folder");
+                return null;
+            }
+            if (!cur.exists()) {
+                if (!cur.mkdirs()) { r.errors++; r.lines.add("Error: cannot create " + rel); return null; }
+                log.add("D\t" + cur.getAbsolutePath());
+            }
         }
-        return r;
+        return cur;
+    }
+
+    /** Moves f into dir/rel without overwriting, recording it for Undo. */
+    static boolean moveInto(File dir, String rel, File f, Result r, List<String> log) {
+        File target = ensureDir(dir, rel, r, log);
+        if (target == null) return false;
+        String name = f.getName();
+        File dst = uniqueDest(target, name);
+        if (dst == null || !moveFile(f, dst)) {
+            r.errors++;
+            r.lines.add("Error moving " + name);
+            return false;
+        }
+        r.moved++;
+        log.add("M\t" + dst.getAbsolutePath() + "\t" + f.getAbsolutePath());
+        r.lines.add(name + "  \u2192  " + rel + (dst.getName().equals(name) ? "" : "  (as " + dst.getName() + ")"));
+        return true;
+    }
+
+    /** Writes the undo log when the run changed something (keeps the previous Undo after an empty run). */
+    static void saveUndo(File undoLog, List<String> log, Result r) {
+        boolean any = false;
+        for (String l : log) if (l.startsWith("M\t")) { any = true; break; }
+        if (!any || undoLog == null) return;
+        try { writeLines(undoLog, log); }
+        catch (IOException e) { r.lines.add("Warning: undo log not saved"); }
     }
 
     public static boolean hasUndo(File undoLog) {

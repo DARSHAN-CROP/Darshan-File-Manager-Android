@@ -8,7 +8,8 @@ import android.content.ComponentName;
 import android.content.Context;
 
 /**
- * Auto mode. Android's own JobScheduler runs this every 15 minutes (the minimum Android allows),
+ * Auto mode (runs the actions ticked in the app: custom rules, type/extension sort, date sort,
+ * old files, duplicates — see AutoRunner). Android's own JobScheduler runs this every 15 minutes (the minimum Android allows),
  * keeps it across reboots (setPersisted) and runs it even when the app is closed.
  */
 public class AutoSortJob extends JobService {
@@ -16,7 +17,7 @@ public class AutoSortJob extends JobService {
     static final long PERIOD_MS = 15 * 60 * 1000L;
 
     static boolean schedule(Context c) {
-        JobScheduler js = (JobScheduler) c.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        JobScheduler js = (JobScheduler) c.getApplicationContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
         if (js == null) return false;
         JobInfo job = new JobInfo.Builder(JOB_ID, new ComponentName(c, AutoSortJob.class))
                 .setPeriodic(PERIOD_MS)
@@ -26,12 +27,12 @@ public class AutoSortJob extends JobService {
     }
 
     static void cancel(Context c) {
-        JobScheduler js = (JobScheduler) c.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        JobScheduler js = (JobScheduler) c.getApplicationContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
         if (js != null) js.cancel(JOB_ID);
     }
 
     static boolean isScheduled(Context c) {
-        JobScheduler js = (JobScheduler) c.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        JobScheduler js = (JobScheduler) c.getApplicationContext().getSystemService(Context.JOB_SCHEDULER_SERVICE);
         if (js == null) return false;
         for (JobInfo j : js.getAllPendingJobs()) if (j.getId() == JOB_ID) return true;
         return false;
@@ -44,8 +45,8 @@ public class AutoSortJob extends JobService {
         new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    if (Store.hasAllFilesAccess(c)) Store.runSort(c, Store.autoMode(c), true);
-                    else Store.log(c, "Auto mode: All files access is off, nothing moved");
+                    if (Store.hasAllFilesAccess(c)) Store.runAuto(c);
+                    else Store.log(c, Store.localized(c).getString(R.string.auto_no_access));
                 } catch (Throwable t) {
                     Store.log(c, "Auto mode error: " + t);
                 }

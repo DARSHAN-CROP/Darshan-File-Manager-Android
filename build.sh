@@ -14,8 +14,8 @@ $BT/aapt2 compile --dir $M/res -o $OUT/res.zip
 sed 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.darshan.filemanager">#' \
   $M/AndroidManifest.xml > $OUT/AndroidManifest.xml
 $BT/aapt2 link -I $JAR --manifest $OUT/AndroidManifest.xml -o $OUT/base.apk --java $OUT/gen \
-  --min-sdk-version 24 --target-sdk-version 34 --version-code 1 --version-name 1.0 $OUT/res.zip
-javac -Xlint:-options -source 8 -target 8 -bootclasspath $JAR -encoding UTF-8 -d $OUT/classes \
+  --min-sdk-version 24 --target-sdk-version 34 --version-code 3 --version-name 2.0 $OUT/res.zip
+javac -Xlint:-options -source 8 -target 8 -bootclasspath $JAR:$BT/core-lambda-stubs.jar -encoding UTF-8 -d $OUT/classes \
   $(find $M/java $OUT/gen -name '*.java')
 $BT/d8 --release --min-api 24 --lib $JAR --output $OUT/dex $(find $OUT/classes -name '*.class')
 cp $OUT/base.apk $OUT/unsigned.apk
