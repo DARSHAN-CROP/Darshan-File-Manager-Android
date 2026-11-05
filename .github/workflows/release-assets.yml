@@ -1,0 +1,23 @@
+name: Attach release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        default: v2.0
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  TAG: ${{ github.event.inputs.tag || 'v2.0' }}
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload .apk to the release
+        run: gh release upload "$TAG" release/DarshanFileManager.apk --clobber
